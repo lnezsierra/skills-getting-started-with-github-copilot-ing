@@ -5,10 +5,12 @@ A super simple FastAPI application that allows students to view and sign up for 
 ## Features
 
 - View all available extracurricular activities
-- See signed-up participants in styled, bulleted lists on each activity card
+- Expand "View participants" on an activity to see its signed-up students
 - Sign up for activities using a @mergington.edu school email address
+- Choose "Join" to reveal a username field and "Confirm" button directly on the activity card; cancel to return to browsing
 - Enter just your school username in the signup form; the fixed @mergington.edu suffix is added automatically
 - Participant lists and availability refresh automatically after signing up
+- Signup confirmations and errors stay visible on the relevant card; full activities cannot be joined
 
 ## Getting Started
 
@@ -45,6 +47,12 @@ Run the signup regression tests with:
 
 ```
 python -m unittest discover -s tests -v
+```
+
+Run the activity-card interaction tests with Node.js 18 or newer:
+
+```
+node --test tests/test_activity_join.cjs
 ```
 
 ## Data Model

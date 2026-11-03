@@ -1,140 +1,137 @@
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
 }
 
 body {
+  margin: 0 auto;
+  padding: 24px;
+  max-width: 800px;
   font-family: Arial, sans-serif;
   line-height: 1.6;
-  color: #333;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f5f5f5;
+  color: #263041;
+  background: #fff;
 }
 
 header {
-  text-align: center;
-  padding: 20px 0;
-  margin-bottom: 30px;
-  background-color: #1a237e;
-  color: white;
-  border-radius: 5px;
+  padding: 16px 0 24px;
+  border-bottom: 1px solid #e1e5eb;
+  margin-bottom: 32px;
 }
 
-header h1 {
-  margin-bottom: 10px;
+h1,
+h2,
+h3,
+p {
+  margin: 0 0 8px;
 }
 
-main {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
+h1 {
+  font-size: 1.5rem;
 }
 
-@media (min-width: 768px) {
-  main {
-    grid-template-columns: 2fr 1fr;
-  }
+h2 {
+  font-size: 1.25rem;
 }
 
-section {
-  background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
+h3 {
+  font-size: 1.125rem;
 }
 
-section h3 {
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #ddd;
-  color: #1a237e;
+header p,
+.intro,
+.schedule,
+small {
+  color: #586174;
+}
+
+.intro {
+  margin-bottom: 24px;
 }
 
 .activity-card {
-  margin-bottom: 15px;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background-color: #f9f9f9;
+  padding: 24px 0;
+  border-top: 1px solid #e1e5eb;
 }
 
-.activity-card h4 {
-  margin-bottom: 10px;
-  color: #0066cc;
-}
-
-.activity-card p {
-  margin-bottom: 8px;
-}
-
-.participants-section {
-  margin-top: 15px;
-  padding: 12px 15px;
-  border: 1px solid #dce3f5;
-  border-radius: 6px;
-  background-color: #eef2ff;
-}
-
-.participants-section h5 {
-  margin-bottom: 8px;
-  color: #1a237e;
-  font-size: 14px;
-}
-
-.participants-list {
-  padding-left: 20px;
-  list-style-type: disc;
-  font-size: 14px;
-}
-
-.participants-list li {
-  padding: 3px 0;
+.activity-description {
   overflow-wrap: anywhere;
 }
 
-.participants-list li::marker {
-  color: #3949ab;
-}
-
-.participants-section .participants-empty {
-  margin-bottom: 0;
-  color: #555;
-  font-size: 14px;
-  font-style: italic;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
+.availability {
   font-weight: bold;
 }
 
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+.participants-section {
+  margin: 12px 0 16px;
+  font-size: 0.875rem;
+}
+
+summary {
+  width: fit-content;
+  color: #3949ab;
+  cursor: pointer;
+}
+
+.participants-list {
+  padding-left: 24px;
+  overflow-wrap: anywhere;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #fff;
+  background: #3949ab;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #283780;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  color: #3949ab;
+  background: transparent;
+  border-color: #cbd1dd;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: #f2f4fa;
+}
+
+:focus-visible {
+  outline: 2px solid #3949ab;
+  outline-offset: 3px;
+}
+
+.signup-form {
+  max-width: 420px;
+  margin-top: 16px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: bold;
 }
 
 .school-email {
   display: flex;
-  align-items: stretch;
-  overflow: hidden;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  align-items: center;
+  border: 1px solid #cbd1dd;
+  border-radius: 6px;
 }
 
 .school-email:focus-within {
@@ -143,70 +140,65 @@ section h3 {
 }
 
 .school-email input {
-  flex: 1;
+  width: 100%;
   min-width: 0;
+  padding: 10px;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   outline: none;
 }
 
 .email-domain {
-  display: flex;
-  align-items: center;
+  padding-right: 10px;
+  font-size: 0.875rem;
+  color: #586174;
   flex-shrink: 0;
-  padding: 0 10px;
-  border-left: 1px solid #dce3f5;
-  background-color: #eef2ff;
-  color: #1a237e;
-  font-size: 14px;
 }
 
-button {
-  background-color: #1a237e;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  font-size: 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+small {
+  display: block;
+  margin-top: 6px;
 }
 
-button:hover {
-  background-color: #3949ab;
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
 }
 
-.message {
-  margin-top: 20px;
-  padding: 10px;
-  border-radius: 4px;
+.message:not(:empty) {
+  margin-top: 12px;
 }
 
 .success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
+  color: #216637;
 }
 
 .error {
-  background-color: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
+  color: #b42318;
 }
 
-.info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
-}
-
-.hidden {
-  display: none;
+[hidden] {
+  display: none !important;
 }
 
 footer {
-  text-align: center;
-  margin-top: 30px;
-  padding: 20px;
-  color: #666;
+  padding: 24px 0;
+  border-top: 1px solid #e1e5eb;
+  color: #586174;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 16px;
+  }
+
+  .school-email {
+    flex-wrap: wrap;
+  }
+
+  .email-domain {
+    padding: 0 10px 8px;
+  }
 }
