@@ -5,7 +5,10 @@ A super simple FastAPI application that allows students to view and sign up for 
 ## Features
 
 - View all available extracurricular activities
-- Sign up for activities
+- See signed-up participants in styled, bulleted lists on each activity card
+- Sign up for activities using a @mergington.edu school email address
+- Enter just your school username in the signup form; the fixed @mergington.edu suffix is added automatically
+- Participant lists and availability refresh automatically after signing up
 
 ## Getting Started
 
@@ -31,6 +34,18 @@ A super simple FastAPI application that allows students to view and sign up for 
 | ------ | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
 | GET    | `/activities`                                                     | Get all activities with their details and current participant count |
 | POST   | `/activities/{activity_name}/signup?email=student@mergington.edu` | Sign up for an activity                                             |
+
+Signup requires a non-empty student email at exactly `mergington.edu`
+(case-insensitive). Other domains, including subdomains, return HTTP 400 without
+registering the student.
+
+## Tests
+
+Run the signup regression tests with:
+
+```
+python -m unittest discover -s tests -v
+```
 
 ## Data Model
 
