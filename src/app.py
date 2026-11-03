@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
+import re
 from pathlib import Path
 from threading import Lock
 
@@ -100,19 +101,16 @@ def get_activities():
 def signup_for_activity(activity_name: str, email: str):
     """Register the email query parameter for the named activity.
 
-    Reject unknown activities, malformed school emails, exact duplicates, and
-    full activities before modifying the participant list.
+    Reject unknown activities, malformed school emails, case-insensitive
+    duplicates, and full activities before modifying the participant list.
     """
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
 
-    # Split at the final @ so any extra @ remains in the local part and is rejected.
-    # Only the domain comparison is case-insensitive; preserve the supplied email.
     local_part, _, domain = email.rpartition("@")
     if (
         domain.lower() != "mergington.edu"
-        or not local_part
-        or any(character.isspace() or character == "@" for character in local_part)
+        or re.fullmatch(r"[A-Za-z0-9._+-]+", local_part) is None
     ):
         raise HTTPException(
             status_code=400,
@@ -123,7 +121,10 @@ def signup_for_activity(activity_name: str, email: str):
 
     # Keep validation and insertion atomic across concurrent signup requests.
     with signup_lock:
-        if email in activity["participants"]:
+        if any(
+            participant.lower() == email.lower()
+            for participant in activity["participants"]
+        ):
             raise HTTPException(status_code=400, detail="Student already signed up for this activity")
 
         if len(activity["participants"]) >= activity["max_participants"]:

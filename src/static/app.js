@@ -40,8 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
     username.type = "text";
     username.required = true;
     username.placeholder = "your-username";
-    username.pattern = "[^@\\s]+";
-    username.title = "Enter only your school username, without @mergington.edu.";
+    username.pattern = "[A-Za-z0-9._+\\-]+";
+    username.title = "Use only ASCII letters, digits, dots, underscores, plus signs, or hyphens; omit @mergington.edu.";
     username.autocomplete = "username";
     username.setAttribute("autocapitalize", "none");
     username.spellcheck = false;

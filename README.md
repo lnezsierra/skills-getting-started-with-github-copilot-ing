@@ -75,7 +75,7 @@ Running `python src/app.py` alone does not start an HTTP server; use Uvicorn.
 
 Open the repository in a Codespace or choose **Dev Containers: Reopen in
 Container** in VS Code. The container installs
-[requirements.txt](requirements.txt) and forwards port 8000.
+[requirements-dev.txt](requirements-dev.txt), including pytest, and forwards port 8000.
 
 In **Run and Debug**, select **Launch Mergington WebApp** and start debugging,
 or run the Uvicorn command above in the terminal. The
@@ -87,7 +87,8 @@ In Codespaces, open port 8000 from the **Ports** panel.
 1. Browse the activity cards and check schedules and remaining spots.
 2. Expand **View participants** to see registered email addresses.
 3. Select **Join**, enter only your school username (for example, `alex`), and
-   select **Confirm**. Do not enter the full email address or any whitespace.
+   select **Confirm**. Use only ASCII letters, digits, dots, underscores, plus
+   signs, or hyphens. Do not enter the full email address or any whitespace.
 4. A successful signup closes and clears that form, displays a confirmation, and
    refreshes participant lists and availability.
 
@@ -152,16 +153,17 @@ Successful response (HTTP 200):
 {"message": "Signed up alex@mergington.edu for Chess Club"}
 ```
 
-Email validation requires a non-empty local part without whitespace or extra
-`@` characters, and exactly the domain `mergington.edu` (case-insensitive).
+Email validation requires a non-empty local part containing only ASCII letters,
+digits, dots, underscores, plus signs, or hyphens, and exactly the domain
+`mergington.edu` (case-insensitive).
 Other domains and subdomains are rejected. Addresses are stored as supplied;
-duplicate detection compares the entire email string case-sensitively within
+duplicate detection compares the entire email string case-insensitively within
 the selected activity.
 
 | Status | Condition | Response detail |
 | --- | --- | --- |
 | `400` | Invalid school email | `Please use a valid @mergington.edu student email address.` |
-| `400` | Exact email already registered for this activity | `Student already signed up for this activity` |
+| `400` | Email already registered for this activity (case-insensitive) | `Student already signed up for this activity` |
 | `400` | Activity has reached or exceeded capacity | `Activity is full` |
 | `404` | Unknown activity name | `Activity not found` |
 | `422` | Missing required `email` query parameter | FastAPI validation error list |
@@ -198,26 +200,55 @@ addresses rather than real student data.
 | [tests/test_signup.py](tests/test_signup.py) | API signup regression tests |
 | [tests/test_activity_join.cjs](tests/test_activity_join.cjs) | Frontend interaction tests using Node's built-in test runner |
 | [requirements.txt](requirements.txt) | Python runtime and API-test dependencies |
+| [requirements-dev.txt](requirements-dev.txt) | Runtime dependencies plus pytest for development |
+| [pytest.ini](pytest.ini) | Pytest test discovery and project import path |
+| [.vscode/settings.json](.vscode/settings.json) | VS Code pytest discovery configuration |
 | [.vscode/launch.json](.vscode/launch.json) | VS Code Uvicorn debugger configuration |
 | [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) | Codespaces and local container setup |
 | [.github/steps/](.github/steps/) | Copilot exercise instructions |
 | [.github/workflows/](.github/workflows/) | Exercise progression and grading automation |
 
-Run both test suites from the repository root after installing the Python
-requirements:
+Install the development dependencies in your activated Python environment,
+then run both test suites from the repository root:
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pip install -r requirements-dev.txt
+python -m pytest -v
 node --test tests/test_activity_join.cjs
 ```
+
+The [pytest configuration](pytest.ini) discovers tests in `tests` and adds the
+repository root to the Python import path.
+
+### Running and debugging tests in VS Code
+
+Install the **Python** extension by Microsoft (already included in the development
+container). Run **Python: Select Interpreter** from the Command Palette and choose
+the environment where you installed the development dependencies.
+
+The workspace enables pytest and discovers Python tests in `tests`. Open the
+**Testing** panel (flask icon) and select **Refresh Tests** if needed. Use **Run
+Tests** to execute the suite, or the controls beside an individual test to run it.
+Set a breakpoint and choose **Debug Test** to step through a test.
+
+The existing Python tests use `unittest` and run unchanged under pytest; they can
+also still be run with `python -m unittest discover -s tests -v`. The JavaScript
+suite remains separate and uses the Node command above.
+
+### Test coverage and isolation
 
 Neither command needs a running server. Python tests use FastAPI's `TestClient`
 and restore activity state between tests. Frontend tests use a lightweight
 simulated DOM and mocked requests; no npm installation is required.
 
-The Python suite covers school-email validation, successful signup, duplicate
-rejection, unknown activities, full and over-capacity activities, and concurrent
-requests for the last available spot. Frontend coverage includes inline forms,
+The Python suite covers activity listing (including an empty collection), the
+homepage redirect, missing and invalid school emails, successful signup and its
+visibility in listings, isolation between activities, duplicate rejection,
+unknown activities, full and over-capacity activities, and concurrent requests
+for the last available spot. Edge cases cover concurrent duplicate signups,
+case-only duplicates, allowed and disallowed username characters, whitespace,
+URL-encoded activity names, error precedence, email supplied only in a JSON body,
+and unsupported signup methods. Frontend coverage includes username validation, inline forms,
 participant refresh, preserved input, failed requests, pending submissions, and
 full and empty states. These are not real-browser layout or accessibility tests.
 

@@ -122,13 +122,25 @@ test("cards have collapsed participants and hidden, accessible inline signup for
     assert.equal(join.attributes["aria-controls"], form.id);
     assert.equal(form.hidden, true);
     assert.equal(username.required, true);
-    assert.equal(username.pattern, "[^@\\s]+");
+    assert.equal(username.pattern, "[A-Za-z0-9._+\\-]+");
     assert.equal(find(form, "label").htmlFor, username.id);
     assert.equal(message.attributes["role"], "status");
     assert.equal(Boolean(find(card, "details").open), false);
   });
   assert.notEqual(controls(cards[0]).username.id, controls(cards[1]).username.id);
   assert.equal(find(cards[0], "li").textContent, "student@mergington.edu");
+});
+
+test("username pattern allows only the API's supported ASCII characters", async () => {
+  const { elements } = await loadApp();
+  const { username } = controls(elements["activities-list"].children[0]);
+  const pattern = new RegExp(`^(?:${username.pattern})$`, "u");
+  for (const value of ["Student123", "first.last", "student_name", "student+club", "student-name", "._+-"]) {
+    assert.equal(pattern.test(value), true, value);
+  }
+  for (const value of ["", "student name", "\tstudent", "student\n", "jos\u00e9", "student!", "student/name", "student\\name", '"student"', "student:club", "student[club]", "student%club", "student@mergington.edu"]) {
+    assert.equal(pattern.test(value), false, value);
+  }
 });
 
 test("Join opens only its own form; Cancel closes it without losing typed input", async () => {
