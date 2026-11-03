@@ -4,6 +4,8 @@ A super simple FastAPI application that allows students to view and sign up for 
 
 ## Features
 
+- School-themed pink, purple, and teal interface with a desktop activity-card grid that adapts to tablets and phones
+- Introductory activity guide, keyboard skip link, and visible focus indicators
 - View all available extracurricular activities
 - Expand "View participants" on an activity to see its signed-up students
 - Sign up for activities using a @mergington.edu school email address

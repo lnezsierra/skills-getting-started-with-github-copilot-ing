@@ -7,15 +7,39 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#activities-container">Skip to activities</a>
     <header>
-      <h1>Mergington High School</h1>
-      <p>Find an activity. Make it your own.</p>
+      <div class="school-bar">
+        <a class="school-brand" href="./" aria-label="Mergington High School home">
+          <span class="school-mark" aria-hidden="true">M</span>
+          <span>Mergington <span class="school-name">High School</span></span>
+        </a>
+        <span class="school-tagline">Your school. Your community.</span>
+      </div>
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Beyond the classroom</p>
+          <h1>Find your people.<br /><span>Discover your thing.</span></h1>
+          <p class="hero-description">Try something new, do what you love, and make memories along the way. Your next great experience starts here.</p>
+          <a class="explore-link" href="#activities-container">Explore activities <span aria-hidden="true">&rarr;</span></a>
+        </div>
+        <aside class="getting-started" aria-labelledby="getting-started-title">
+          <p class="eyebrow">Make room for something you love</p>
+          <h2 id="getting-started-title">Big possibilities.<br />A simple start.</h2>
+          <ol>
+            <li>Find an activity that feels like you.</li>
+            <li>Check the schedule and available spots.</li>
+            <li>Join with your school username.</li>
+          </ol>
+        </aside>
+      </div>
     </header>
 
     <main>
-      <section id="activities-container">
-        <h2>Extracurricular activities</h2>
-        <p class="intro">Choose an activity and join with your school username.</p>
+      <section id="activities-container" aria-labelledby="activities-title" tabindex="-1">
+        <p class="eyebrow">Find your next adventure</p>
+        <h2 id="activities-title">Extracurricular activities</h2>
+        <p class="intro">A place for every interest. Choose an activity and make it your own.</p>
         <div id="activities-list">
           <!-- Activities will be loaded here -->
           <p>Loading activities...</p>
@@ -26,6 +50,7 @@
 
     <footer>
       <p>&copy; 2023 Mergington High School</p>
+      <p>Connect. Create. Belong.</p>
     </footer>
 
     <script src="app.js"></script>
