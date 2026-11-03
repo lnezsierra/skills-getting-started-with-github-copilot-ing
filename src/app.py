@@ -1,8 +1,7 @@
-"""
-High School Management System API
+"""Serve the Mergington High School activities website and signup API.
 
-A super simple FastAPI application that allows students to view and sign up
-for extracurricular activities at Mergington High School.
+Activity data is kept in process memory for this educational demo; there is no
+database persistence or student authentication.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -10,16 +9,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
 from pathlib import Path
+from threading import Lock
 
 app = FastAPI(title="Mergington High School API",
               description="API for viewing and signing up for extracurricular activities")
 
-# Mount the static files directory
+# Resolve static assets relative to this module, not the working directory.
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
-# In-memory activity database
+# Activity names are identifiers; participants are stored as email strings.
+# Each server process has its own seed data, reset on restart or reload.
 activities = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
@@ -78,6 +79,9 @@ activities = {
 }
 
 
+signup_lock = Lock()
+
+
 @app.get("/")
 def root():
     return RedirectResponse(url="/static/index.html")
@@ -85,16 +89,25 @@ def root():
 
 @app.get("/activities")
 def get_activities():
+    """Return activities keyed by name, including participant emails.
+
+    The frontend derives participant counts and remaining spots from this data.
+    """
     return activities
 
 
 @app.post("/activities/{activity_name}/signup")
 def signup_for_activity(activity_name: str, email: str):
-    """Sign up a student for an activity"""
-    # Validate activity exists
+    """Register the email query parameter for the named activity.
+
+    Reject unknown activities, malformed school emails, exact duplicates, and
+    full activities before modifying the participant list.
+    """
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
 
+    # Split at the final @ so any extra @ remains in the local part and is rejected.
+    # Only the domain comparison is case-insensitive; preserve the supplied email.
     local_part, _, domain = email.rpartition("@")
     if (
         domain.lower() != "mergington.edu"
@@ -106,13 +119,15 @@ def signup_for_activity(activity_name: str, email: str):
             detail="Please use a valid @mergington.edu student email address.",
         )
 
-    # Get the specific activity
     activity = activities[activity_name]
 
-    # Validate student is not already signed up
-    if email in activity["participants"]:
-        raise HTTPException(status_code=400, detail="Student already signed up for this activity")
+    # Keep validation and insertion atomic across concurrent signup requests.
+    with signup_lock:
+        if email in activity["participants"]:
+            raise HTTPException(status_code=400, detail="Student already signed up for this activity")
 
-    # Add student
-    activity["participants"].append(email)
+        if len(activity["participants"]) >= activity["max_participants"]:
+            raise HTTPException(status_code=400, detail="Activity is full")
+
+        activity["participants"].append(email)
     return {"message": f"Signed up {email} for {activity_name}"}
