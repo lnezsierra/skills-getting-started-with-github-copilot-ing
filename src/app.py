@@ -1,28 +1,36 @@
 """
-High School Management System API
+Mergington High School extracurricular activities API.
 
-A super simple FastAPI application that allows students to view and sign up
-for extracurricular activities at Mergington High School.
+Serves the web interface, lists activities, and accepts student signups.
+Activity data is stored in memory and resets when the application restarts.
 """
 
+# API framework, static file serving, redirects, and email validation.
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from pydantic import EmailStr
+
+# Filesystem utilities and thread synchronization for signup requests.
 import os
 from pathlib import Path
 from threading import Lock
 
+# Configure the API metadata displayed in the generated documentation.
 app = FastAPI(title="Mergington High School API",
               description="API for viewing and signing up for extracurricular activities")
+
+# Serialize signup validation and updates within this application process.
 signup_lock = Lock()
 
-# Mount the static files directory
+# Serve frontend assets from the static directory beside this module.
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
-# In-memory activity database
+# In-memory activity catalog containing descriptions, schedules, and signups.
+# Each activity defines a participant limit and a list of registered emails.
+# Changes are not persisted or shared between separate worker processes.
 activities = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
@@ -81,37 +89,59 @@ activities = {
 }
 
 
+# Frontend entry point.
 @app.get("/")
 def root():
+    """Redirect visitors to the activity signup web interface."""
     return RedirectResponse(url="/static/index.html")
 
 
+# Activity discovery endpoint.
 @app.get("/activities")
 def get_activities():
+    """Return all activities with schedules, capacities, and participant lists."""
     return activities
 
 
+# Student registration endpoint.
 @app.post("/activities/{activity_name}/signup")
 def signup_for_activity(activity_name: str, email: EmailStr):
-    """Sign up a student for an activity"""
-    # Validate activity exists
+    """Register a school email address for an activity with available space.
+
+    Args:
+        activity_name: Exact name of an activity in the catalog.
+        email: Student email address, validated by Pydantic's EmailStr.
+
+    Returns:
+        A confirmation message identifying the student and activity.
+
+    Raises:
+        HTTPException: 404 for an unknown activity, 400 for a non-school
+            email or duplicate signup, or 409 when the activity is full.
+    """
+    # Reject unknown activity names before accessing the catalog entry.
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
 
+    # EmailStr validates syntax; this check restricts signups to the school domain.
     if email.rsplit("@", 1)[1].lower() != "mergington.edu":
         raise HTTPException(status_code=400, detail="Use your @mergington.edu school email address")
 
-    # Get the specific activity
+    # Retrieve the shared activity record to validate and update its signups.
     activity = activities[activity_name]
 
+    # Keep duplicate checks, capacity checks, and insertion atomic across threads.
     with signup_lock:
-        # Validate the student is not already signed up
+        # Reject repeat registration using the same stored email address.
         if email in activity["participants"]:
             raise HTTPException(status_code=400, detail="Student already signed up for this activity")
 
+        # Reject registration when the activity has reached its participant limit.
         if len(activity["participants"]) >= activity["max_participants"]:
             raise HTTPException(status_code=409, detail="Activity is full")
 
-        # Add student
+        # Record the signup only after all validation checks succeed.
         activity["participants"].append(email)
+
+    # Confirm successful registration to the caller.
     return {"message": f"Signed up {email} for {activity_name}"}
