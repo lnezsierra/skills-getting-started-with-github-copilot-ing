@@ -7,7 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupButton = document.getElementById("signup-button");
   const dismissMessageButton = document.getElementById("dismiss-message");
   const usernameInput = document.getElementById("username");
+  const activitySearch = document.getElementById("activity-search");
+  const activityCount = document.getElementById("activity-count");
+  const activitiesEmpty = document.getElementById("activities-empty");
+  const activityCards = new Map();
   const fullActivities = new Set();
+  let activitiesLoaded = false;
   let selectedActivity = "";
   let isSubmitting = false;
 
@@ -18,7 +23,34 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedActivityText.textContent = selectedActivity
       ? `Selected activity: ${selectedActivity}${isFull ? " (Full)" : ""}`
       : "Choose an activity using its Join button.";
+    selectedActivityText.className = selectedActivity
+      ? "selected-activity has-selection" : "selected-activity";
+    activityCards.forEach(({ card, joinButton }, name) => {
+      const isSelected = selectedActivity === name;
+      card.setAttribute("data-selected", String(isSelected));
+      joinButton.setAttribute("aria-pressed", String(isSelected));
+      joinButton.disabled = isSubmitting || fullActivities.has(name);
+      joinButton.textContent = fullActivities.has(name) ? "Full" : isSelected ? "Selected" : "Join";
+    });
   }
+
+  function filterActivities() {
+    if (!activitiesLoaded) {
+      return;
+    }
+    const query = activitySearch.value.trim().toLowerCase();
+    let visibleCount = 0;
+    activityCards.forEach(({ card, searchText }) => {
+      card.hidden = !searchText.includes(query);
+      if (!card.hidden) {
+        visibleCount++;
+      }
+    });
+    activityCount.textContent = `${visibleCount} ${visibleCount === 1 ? "activity" : "activities"} found`;
+    activitiesEmpty.hidden = visibleCount > 0;
+  }
+
+  activitySearch.addEventListener("input", filterActivities);
 
   function showMessage(text, type) {
     messageText.textContent = text;
@@ -42,9 +74,11 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(`Failed to load activities: ${response.status}`);
       }
       const activities = await response.json();
+      activitiesLoaded = true;
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activityCards.clear();
       fullActivities.clear();
 
       // Populate activities list
@@ -66,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         activityCard.innerHTML = `
           <div class="activity-card-header">
-            <h4>${name}</h4>
+            <h3>${name}</h3>
             <span class="availability-badge availability-${availability}">${availabilityLabel}</span>
           </div>
           <p class="activity-description">${details.description}</p>
@@ -75,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const participantsSection = document.createElement("div");
         participantsSection.className = "participants";
-        const participantsHeading = document.createElement("h5");
+        const participantsHeading = document.createElement("h4");
         participantsHeading.textContent = "Participants";
         participantsSection.appendChild(participantsHeading);
 
@@ -106,15 +140,24 @@ document.addEventListener("DOMContentLoaded", () => {
           usernameInput.focus();
         });
         activityCard.appendChild(joinButton);
+        activityCards.set(name, {
+          card: activityCard,
+          joinButton,
+          searchText: `${name} ${details.description} ${details.schedule}`.toLowerCase(),
+        });
         activitiesList.appendChild(activityCard);
-
       });
       if (!Object.keys(activities).includes(selectedActivity)) {
         selectedActivity = "";
       }
       updateSignupButton();
+      filterActivities();
     } catch (error) {
+      activitiesLoaded = false;
+      activityCards.clear();
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
+      activityCount.textContent = "Activities unavailable";
+      activitiesEmpty.hidden = true;
       console.error("Error fetching activities:", error);
     }
   }

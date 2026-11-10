@@ -5,6 +5,11 @@ A super simple FastAPI application that allows students to view and sign up for 
 ## Features
 
 - View all available extracurricular activities
+- Teal-and-pink school styling, a multi-column activity grid on wide screens,
+  and a sticky desktop signup panel keep browsing and registration together.
+- Search activities by name, description, or schedule, with matching counts
+  and a clear empty state. Join highlights the selected card and keeps the
+  signup form synchronized; keyboard focus and status announcements are supported.
 - Sign up for activities
 - Enter just your school username in the form; the fixed `@mergington.edu` suffix is added automatically.
 - Registration requires a valid `@mergington.edu` email address, enforced by the form and API (domain matching is case-insensitive).

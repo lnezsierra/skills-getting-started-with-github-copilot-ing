@@ -59,6 +59,7 @@ async function run() {
   [
     "activities-list", "signup-form", "message", "message-text",
     "signup-button", "dismiss-message", "username", "selected-activity",
+    "activity-search", "activity-count", "activities-empty",
   ].forEach((id) => {
     ids[id] = new Element();
   });
@@ -114,6 +115,25 @@ async function run() {
   ids["dismiss-message"].click();
   assert(ids.username.focused, "Dismiss focuses username when signup is disabled");
   const cards = ids["activities-list"].children;
+  assert(ids["activity-count"].textContent === "6 activities found", "Show activity count");
+  assert(ids["activities-empty"].hidden, "Hide empty state when activities exist");
+  ids["activity-search"].value = "  AVAILABLE  ";
+  ids["activity-search"].input();
+  assert(!cards[0].hidden && cards.slice(1).every((card) => card.hidden), "Search by name ignores case and surrounding spaces");
+  assert(ids["activity-count"].textContent === "1 activity found", "Singular search result count");
+  ids["activity-search"].value = "Fridays";
+  ids["activity-search"].input();
+  assert(cards.every((card) => !card.hidden), "Search by schedule");
+  ids["activity-search"].value = "Activity description";
+  ids["activity-search"].input();
+  assert(cards.every((card) => !card.hidden), "Search by description");
+  ids["activity-search"].value = "No matching activity";
+  ids["activity-search"].input();
+  assert(cards.every((card) => card.hidden) && !ids["activities-empty"].hidden, "Explain no search matches");
+  assert(ids["activity-count"].textContent === "0 activities found", "Zero result count");
+  ids["activity-search"].value = "";
+  ids["activity-search"].input();
+  assert(cards.every((card) => !card.hidden) && ids["activities-empty"].hidden, "Clearing search restores cards");
   assert(cards[0].html.includes("availability-available\">3 spots left"), "Normal availability badge");
   assert(cards[1].html.includes("Almost full - 2 spots left"), "20% threshold is almost full");
   assert(cards[2].html.includes("Almost full - 1 spot left"), "Singular spot label");
@@ -127,9 +147,13 @@ async function run() {
   assert(joinButton.textContent === "Join" && !joinButton.disabled, "Available activity has Join button");
   assert(joinButton.attributes["aria-label"] === "Join Available", "Join button identifies activity");
   joinButton.click();
+  assert(cards[0].attributes["data-selected"] === "true", "Highlight selected card");
+  assert(joinButton.attributes["aria-pressed"] === "true", "Announce selected Join button");
   assert(ids["selected-activity"].textContent === "Selected activity: Available", "Join displays selected activity");
   assert(ids.username.focused, "Join focuses username");
   cards[1].children[1].click();
+  assert(cards[0].attributes["data-selected"] === "false", "Remove previous selection highlight");
+  assert(joinButton.attributes["aria-pressed"] === "false", "Clear previous pressed state");
   assert(ids["selected-activity"].textContent === "Selected activity: Limited", "Another Join replaces selection");
   joinButton.click();
   for (const card of cards.slice(3)) {
@@ -141,6 +165,7 @@ async function run() {
   assert(ids["signup-button"].disabled, "Disable signup while pending");
   assert(ids["signup-button"].textContent === "Signing up...", "Loading label");
   assert(ids["signup-form"].attributes["aria-busy"] === "true", "Accessible busy state");
+  assert(cards.every((card) => card.children[1].disabled), "Do not switch activities during signup");
   await submit();
   assert(postCount === 1, "Ignore repeat submissions");
   assert(lastUrl.includes("student%2Bclub%40mergington.edu"), "Keep fixed domain and URL encoding");
@@ -211,7 +236,7 @@ async function run() {
   ids["activities-list"].children[0].children[1].click();
   assert(!ids["signup-button"].disabled, "Join another activity recovers from full state");
   assert(ids["selected-activity"].textContent === "Selected activity: Available" && ids.username.focused, "Join still selects and focuses after refresh");
-  console.log("PASS: Join selection and focus, full-activity controls, capacity refresh, availability badges, repeat-submit protection, persistent messages, and error recovery");
+  console.log("PASS: activity search and empty states, selected-card feedback, Join focus, full-activity controls, capacity refresh, repeat-submit protection, persistent messages, and error recovery");
 }
 
 run().catch((error) => {
