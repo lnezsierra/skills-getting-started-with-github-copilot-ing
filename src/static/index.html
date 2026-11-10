@@ -26,7 +26,16 @@
         <form id="signup-form">
           <div class="form-group">
             <label for="email">Student Email:</label>
-            <input type="email" id="email" required placeholder="your-email@mergington.edu" />
+            <input
+              type="email"
+              id="email"
+              required
+              placeholder="your-email@mergington.edu"
+              pattern="[^@\s]+@[mM][eE][rR][gG][iI][nN][gG][tT][oO][nN]\.[eE][dD][uU]"
+              title="Use your @mergington.edu school email address"
+              aria-describedby="email-help"
+            />
+            <small id="email-help">Use your @mergington.edu school email address.</small>
           </div>
           <div class="form-group">
             <label for="activity">Select Activity:</label>
