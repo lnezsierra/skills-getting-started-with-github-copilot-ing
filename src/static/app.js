@@ -6,6 +6,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageText = document.getElementById("message-text");
   const signupButton = document.getElementById("signup-button");
   const dismissMessageButton = document.getElementById("dismiss-message");
+  const usernameInput = document.getElementById("username");
+  const fullActivities = new Set();
+  let isSubmitting = false;
+
+  function updateSignupButton() {
+    const isFull = fullActivities.has(activitySelect.value);
+    signupButton.disabled = isSubmitting || isFull;
+    signupButton.textContent = isSubmitting ? "Signing up..." : isFull ? "Activity full" : "Sign Up";
+  }
+
+  activitySelect.addEventListener("change", updateSignupButton);
 
   function showMessage(text, type) {
     messageText.textContent = text;
@@ -14,7 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dismissMessageButton.addEventListener("click", () => {
     messageDiv.classList.add("hidden");
-    signupButton.focus();
+    if (signupButton.disabled) {
+      usernameInput.focus();
+    } else {
+      signupButton.focus();
+    }
   });
 
   // Function to fetch activities from API
@@ -25,10 +40,12 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(`Failed to load activities: ${response.status}`);
       }
       const activities = await response.json();
+      const selectedActivity = activitySelect.value;
 
       // Clear loading message
       activitiesList.innerHTML = "";
       activitySelect.options.length = 1;
+      fullActivities.clear();
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -43,6 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const availabilityLabel = availability === "full"
           ? "Full"
           : availability === "limited" ? `Almost full - ${spotsLabel}` : spotsLabel;
+        if (spotsLeft === 0) {
+          fullActivities.add(name);
+        }
 
         activityCard.innerHTML = `
           <div class="activity-card-header">
@@ -74,14 +94,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         activityCard.appendChild(participantsSection);
+        const joinButton = document.createElement("button");
+        joinButton.type = "button";
+        joinButton.className = "join-button";
+        joinButton.disabled = spotsLeft === 0;
+        joinButton.textContent = spotsLeft === 0 ? "Full" : "Join";
+        joinButton.setAttribute("aria-label", spotsLeft === 0 ? `${name} is full` : `Join ${name}`);
+        joinButton.addEventListener("click", () => {
+          activitySelect.value = name;
+          updateSignupButton();
+          usernameInput.focus();
+        });
+        activityCard.appendChild(joinButton);
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
         const option = document.createElement("option");
         option.value = name;
-        option.textContent = name;
+        option.textContent = spotsLeft === 0 ? `${name} (Full)` : name;
+        option.disabled = spotsLeft === 0;
         activitySelect.appendChild(option);
       });
+      activitySelect.value = Object.keys(activities).includes(selectedActivity) ? selectedActivity : "";
+      updateSignupButton();
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
@@ -91,15 +126,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (signupButton.disabled) {
+    if (isSubmitting) {
+      return;
+    }
+    if (fullActivities.has(activitySelect.value)) {
+      showMessage("Activity is full. Please choose another activity.", "error");
+      updateSignupButton();
       return;
     }
 
-    const email = `${document.getElementById("username").value}@mergington.edu`;
-    const activity = document.getElementById("activity").value;
+    const email = `${usernameInput.value}@mergington.edu`;
+    const activity = activitySelect.value;
 
-    signupButton.disabled = true;
-    signupButton.textContent = "Signing up...";
+    isSubmitting = true;
+    updateSignupButton();
     signupForm.setAttribute("aria-busy", "true");
     messageDiv.classList.add("hidden");
 
@@ -122,13 +162,16 @@ document.addEventListener("DOMContentLoaded", () => {
           ? result.detail.map((error) => error.msg).join(" ")
           : result.detail || "An error occurred";
         showMessage(errorMessage, "error");
+        if (response.status === 409) {
+          await fetchActivities();
+        }
       }
     } catch (error) {
       showMessage("Failed to sign up. Please try again.", "error");
       console.error("Error signing up:", error);
     } finally {
-      signupButton.disabled = false;
-      signupButton.textContent = "Sign Up";
+      isSubmitting = false;
+      updateSignupButton();
       signupForm.removeAttribute("aria-busy");
     }
   });

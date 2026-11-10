@@ -12,6 +12,10 @@ A super simple FastAPI application that allows students to view and sign up for 
   remaining spots, "Almost full" when at most 20% of capacity remains, or "Full".
 - Signup shows "Signing up..." and blocks repeat submissions while a request is pending.
 - Signup confirmations and errors stay visible until dismissed or a new signup attempt begins.
+- Each available activity has a Join button that selects it and focuses the username field.
+- Full activities have disabled Join buttons and dropdown options. The API also
+  rejects signups once capacity is reached, including simultaneous requests for
+  the last spot within the running application process.
 
 ## Getting Started
 
@@ -41,7 +45,9 @@ A super simple FastAPI application that allows students to view and sign up for 
 | POST   | `/activities/{activity_name}/signup?email=student@mergington.edu` | Sign up for an activity                                             |
 
 Signup rejects other domains with HTTP 400 and malformed email addresses with
-HTTP 422. Domain validation does not verify ownership of the email address.
+HTTP 422. Full activities return HTTP 409; the form refreshes availability when
+another signup has taken the last spot. Domain validation does not verify
+ownership of the email address.
 
 ## Tests
 

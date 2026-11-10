@@ -135,6 +135,10 @@ section h3 {
   overflow-wrap: anywhere;
 }
 
+.join-button {
+  margin-top: 12px;
+}
+
 .form-group {
   margin-bottom: 15px;
 }
@@ -186,6 +190,10 @@ button:hover:not(:disabled) {
 
 button:disabled {
   background-color: #666;
+  cursor: not-allowed;
+}
+
+#signup-form[aria-busy="true"] button:disabled {
   cursor: wait;
 }
 

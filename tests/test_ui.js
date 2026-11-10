@@ -118,10 +118,32 @@ async function run() {
   }
   assert(cards[0].html.includes('class="activity-schedule"'), "Highlighted schedule");
   assert(cards[0].children[0].className === "participants", "Separate participant section");
+  const joinButton = cards[0].children[1];
+  assert(joinButton.textContent === "Join" && !joinButton.disabled, "Available activity has Join button");
+  assert(joinButton.attributes["aria-label"] === "Join Available", "Join button identifies activity");
+  joinButton.click();
+  assert(ids.activity.value === "Available", "Join preselects activity");
+  assert(ids.username.focused, "Join focuses username");
+  for (const card of cards.slice(3)) {
+    assert(card.children[1].disabled && card.children[1].textContent === "Full", "Full activities have disabled Join buttons");
+  }
+  for (const option of ids.activity.options.slice(4)) {
+    assert(option.disabled && option.textContent.endsWith("(Full)"), "Full dropdown options are disabled and labeled");
+  }
 
   const submit = () => ids["signup-form"].submit({ preventDefault() {} });
+  ids.activity.value = "Full";
+  ids.activity.change();
+  assert(ids["signup-button"].disabled && ids["signup-button"].textContent === "Activity full", "Full selection disables signup");
+  await submit();
+  assert(postCount === 0, "Full selection cannot submit even programmatically");
+  assert(ids["message-text"].textContent.includes("Activity is full"), "Explain blocked signup");
+  ids["dismiss-message"].click();
+  assert(ids.username.focused, "Dismiss focuses username when signup is disabled");
   ids.username.value = "student+club";
   ids.activity.value = "Available";
+  ids.activity.change();
+  assert(!ids["signup-button"].disabled, "Selecting available activity restores signup");
   const submission = submit();
   assert(ids["signup-button"].disabled, "Disable signup while pending");
   assert(ids["signup-button"].textContent === "Signing up...", "Loading label");
@@ -168,7 +190,32 @@ async function run() {
     assert(!ids["signup-button"].disabled, "Restore button after request failure");
   }
   assert(errors.length === 2, "Log request failures");
-  console.log("PASS: availability badges, loading and repeat-submit protection, refresh, persistent messages, dismissal, and error recovery");
+
+  ids.activity.value = "Last spot";
+  ids.activity.change();
+  const lastSpotSignup = submit();
+  activities["Last spot"].participants.push("last@mergington.edu");
+  pending.resolve({ ok: true, json: async () => ({ message: "Last spot confirmed" }) });
+  await lastSpotSignup;
+  assert(ids["activities-list"].children[2].children[1].disabled, "Last spot signup disables card Join");
+  assert(ids.activity.options[3].disabled, "Last spot signup disables dropdown option");
+  assert(ids["signup-button"].disabled, "Finally must not re-enable full selected activity");
+  assert(ids.message.className === "message success", "Keep last-spot confirmation visible");
+
+  ids.activity.value = "Limited";
+  ids.activity.change();
+  const staleSignup = submit();
+  activities.Limited.participants.push("other1@mergington.edu", "other2@mergington.edu");
+  pending.resolve({ ok: false, status: 409, json: async () => ({ detail: "Activity is full" }) });
+  await staleSignup;
+  assert(ids["message-text"].textContent === "Activity is full", "Show server capacity error");
+  assert(ids.activity.value === "Limited", "Preserve selection when refreshing stale availability");
+  assert(ids["signup-button"].disabled, "Server capacity conflict disables signup after refresh");
+  assert(ids["activities-list"].children[1].children[1].disabled, "Server capacity conflict refreshes Join button");
+  ids["activities-list"].children[0].children[1].click();
+  assert(!ids["signup-button"].disabled, "Join another activity recovers from full state");
+  assert(ids.activity.value === "Available" && ids.username.focused, "Join still preselects and focuses after refresh");
+  console.log("PASS: Join selection and focus, full-activity controls, capacity refresh, availability badges, repeat-submit protection, persistent messages, and error recovery");
 }
 
 run().catch((error) => {

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 from pathlib import Path
 import re
@@ -85,6 +86,48 @@ class SignupTests(unittest.TestCase):
             self.signup("student@mergington.edu", "Unknown Club").status_code, 404
         )
         self.assertEqual(activities, self.original_activities)
+
+    def test_full_and_over_capacity_activities_reject_signup(self):
+        activity = activities["Chess Club"]
+        for capacity in [len(activity["participants"]), 1, 0]:
+            with self.subTest(capacity=capacity):
+                activity["max_participants"] = capacity
+                before = deepcopy(activities)
+                response = self.signup("newstudent@mergington.edu")
+                self.assertEqual(response.status_code, 409)
+                self.assertEqual(response.json(), {"detail": "Activity is full"})
+                self.assertEqual(activities, before)
+
+    def test_last_spot_can_only_be_taken_once(self):
+        activity = activities["Chess Club"]
+        activity["max_participants"] = len(activity["participants"]) + 1
+        response = self.signup("laststudent@mergington.edu")
+        self.assertEqual(response.status_code, 200)
+        before = deepcopy(activities)
+        response = self.signup("nextstudent@mergington.edu")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(activities, before)
+
+    def test_concurrent_signups_cannot_exceed_capacity(self):
+        activity = activities["Chess Club"]
+        activity["max_participants"] = len(activity["participants"]) + 1
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            responses = list(executor.map(
+                self.signup,
+                [f"student{i}@mergington.edu" for i in range(8)],
+            ))
+        self.assertEqual(sum(response.status_code == 200 for response in responses), 1)
+        self.assertEqual(sum(response.status_code == 409 for response in responses), 7)
+        self.assertEqual(len(activity["participants"]), activity["max_participants"])
+
+    def test_duplicate_signup_on_full_activity_keeps_existing_error(self):
+        activity = activities["Chess Club"]
+        activity["max_participants"] = len(activity["participants"])
+        response = self.signup("michael@mergington.edu")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["detail"], "Student already signed up for this activity"
+        )
 
     def test_form_accepts_only_username_with_fixed_school_domain(self):
         class EmailInputParser(HTMLParser):
