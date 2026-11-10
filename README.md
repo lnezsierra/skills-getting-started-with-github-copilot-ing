@@ -93,19 +93,46 @@ Signup errors:
 
 ## Tests
 
-With the Python dependencies installed, run the API and signup tests:
+Install the development dependencies (including the application dependencies and
+pytest and Playwright), install Chromium, then run the API and browser tests:
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pip install -r requirements-dev.txt
+python -m playwright install --with-deps chromium
+python -m pytest -v
 ```
 
-With Node.js installed, run the UI behavior tests:
+The existing `unittest.TestCase` tests run unchanged under pytest. Test discovery
+is configured in [pytest.ini](pytest.ini).
+Browser tests start an isolated local server on a free port and restore activity
+data after each test. To run only API tests without installing a browser, use
+`python -m pytest tests/test_signup.py -v`.
+
+### VS Code
+
+1. Install the recommended **Python** and **Python Debugger** extensions.
+2. Run **Python: Select Interpreter** from the Command Palette and choose the
+   environment where you installed the development dependencies, such as `.venv`.
+3. Open the **Testing** panel and refresh discovery if needed. Use **Run Tests**
+   or **Debug Tests** for the suite or an individual test.
+
+Workspace settings enable pytest, disable duplicate unittest discovery, and
+refresh discovery when test files are saved. New or rebuilt dev containers
+install the development dependencies automatically; in an existing container,
+run the install commands above. Install Chromium with the command above before
+running browser tests in a new container.
+
+### JavaScript UI tests
+
+The dev container includes Node.js for the UI tests. Rebuild an existing
+container to install it, or install Node.js locally, then run:
 
 ```bash
 node tests/test_ui.js
 ```
 
 Both commands run from the repository root.
+The JavaScript tests run separately and are not discovered by pytest.
 
 ## Project layout
 

@@ -54,7 +54,7 @@ async function settle() {
   }
 }
 
-async function run() {
+function createUI(fetch) {
   const ids = {};
   [
     "activities-list", "signup-form", "message", "message-text",
@@ -71,6 +71,92 @@ async function run() {
     createElement: (tag) => new Element(tag),
     addEventListener: (event, callback) => callback(),
   };
+  const errors = [];
+  const source = readFileSync("src/static/app.js", "utf8");
+  new Function("document", "fetch", "console", "setTimeout", source)(
+    document, fetch, { error: (...args) => errors.push(args) },
+    () => { throw new Error("Messages must not expire on a timer"); }
+  );
+  return { ids, errors };
+}
+
+async function testLoadingStates() {
+  const failures = [
+    async () => { throw new Error("Network unavailable"); },
+    async () => ({ ok: false, status: 503 }),
+    async () => ({ ok: true, json: async () => { throw new Error("Invalid JSON"); } }),
+  ];
+
+  function assertUnavailable(ids) {
+    assert(ids["activities-list"].html.includes("Failed to load activities"), "Explain activity loading failure");
+    assert(ids["activities-list"].children.length === 0, "Remove stale activity cards");
+    assert(ids["activity-count"].textContent === "Activities unavailable", "Announce unavailable catalog");
+    assert(ids["activities-empty"].hidden, "Do not confuse failure with empty search results");
+    assert(ids["signup-button"].disabled, "Disable signup when availability cannot be loaded");
+    assert(ids["selected-activity"].textContent.includes("Choose an activity"), "Clear stale selection");
+  }
+
+  for (const fail of failures) {
+    let postCount = 0;
+    const { ids, errors } = createUI(async (url, options) => {
+      if (options) postCount++;
+      return fail();
+    });
+    await settle();
+    assertUnavailable(ids);
+    ids["activity-search"].value = "Chess";
+    ids["activity-search"].input();
+    assert(ids["activity-count"].textContent === "Activities unavailable", "Search preserves loading error");
+    await ids["signup-form"].submit({ preventDefault() {} });
+    assert(postCount === 0, "Do not submit after initial loading failure");
+    assert(errors.length === 1, "Log initial loading failure");
+  }
+
+  for (const status of [200, 409]) {
+    for (const fail of failures) {
+      let getCount = 0;
+      let postCount = 0;
+      const { ids, errors } = createUI(async (url, options) => {
+        if (options) {
+          postCount++;
+          return {
+            ok: status === 200,
+            status,
+            json: async () => status === 200
+              ? { message: "Signup confirmed" } : { detail: "Activity is full" },
+          };
+        }
+        if (getCount++ > 0) return fail();
+        return {
+          ok: true,
+          json: async () => ({
+            Chess: { description: "Chess", schedule: "Friday", max_participants: 10, participants: [] },
+          }),
+        };
+      });
+      await settle();
+      ids["activities-list"].children[0].children[1].click();
+      ids.username.value = "student";
+      await ids["signup-form"].submit({ preventDefault() {} });
+      assertUnavailable(ids);
+      assert(ids["message-text"].textContent === (status === 200 ? "Signup confirmed" : "Activity is full"), "Preserve signup result when refresh fails");
+      assert(!("aria-busy" in ids["signup-form"].attributes), "Clear busy state after refresh failure");
+      assert(errors.length === 1, "Log refresh failure");
+      await ids["signup-form"].submit({ preventDefault() {} });
+      assert(postCount === 1, "Do not resubmit a stale selection after refresh failure");
+    }
+  }
+
+  const { ids, errors } = createUI(async () => ({ ok: true, json: async () => ({}) }));
+  await settle();
+  assert(ids["activity-count"].textContent === "0 activities found", "Count an empty catalog");
+  assert(!ids["activities-empty"].hidden, "Show empty catalog state");
+  assert(ids["activities-list"].children.length === 0, "Empty catalog has no cards");
+  assert(ids["signup-button"].disabled, "Empty catalog cannot accept signup");
+  assert(errors.length === 0, "Empty catalog is not a request error");
+}
+
+async function run() {
   const activities = {};
   for (const [name, capacity, count] of [
     ["Available", 10, 7], ["Limited", 10, 8], ["Last spot", 10, 9],
@@ -96,15 +182,10 @@ async function run() {
       pending = { resolve, reject };
     });
   };
-  const errors = [];
-  const source = readFileSync("src/static/app.js", "utf8");
+  const { ids, errors } = createUI(fetch);
   const html = readFileSync("src/static/index.html", "utf8");
   assert(!/<select\b/.test(html), "Activity dropdown is removed");
   assert(html.includes('id="selected-activity"'), "Form shows selected activity");
-  new Function("document", "fetch", "console", "setTimeout", source)(
-    document, fetch, { error: (...args) => errors.push(args) },
-    () => { throw new Error("Messages must not expire on a timer"); }
-  );
   await settle();
   const submit = () => ids["signup-form"].submit({ preventDefault() {} });
   assert(ids["signup-button"].disabled, "Require a Join selection before signup");
@@ -251,7 +332,8 @@ async function run() {
   ids["activities-list"].children[0].children[1].click();
   assert(!ids["signup-button"].disabled, "Join another activity recovers from full state");
   assert(ids["selected-activity"].textContent === "Selected activity: Available" && ids.username.focused, "Join still selects and focuses after refresh");
-  console.log("PASS: activity search and empty states, selected-card feedback, Join focus, full-activity controls, capacity refresh, repeat-submit protection, persistent messages, and error recovery");
+  await testLoadingStates();
+  console.log("PASS: activity search and empty states, selected-card feedback, Join focus, full-activity controls, capacity refresh, repeat-submit protection, persistent messages, loading failures, empty catalogs, and error recovery");
 }
 
 run().catch((error) => {

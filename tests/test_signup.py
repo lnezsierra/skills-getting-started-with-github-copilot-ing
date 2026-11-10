@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+from threading import Barrier
 import unittest
 
 from fastapi.testclient import TestClient
@@ -25,6 +26,54 @@ class SignupTests(unittest.TestCase):
         return self.client.post(
             f"/activities/{activity}/signup", params={"email": email}
         )
+
+    def test_activity_catalog_contract(self):
+        response = self.client.get("/activities")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), self.original_activities)
+        for details in response.json().values():
+            self.assertEqual(
+                set(details),
+                {"description", "schedule", "max_participants", "participants"},
+            )
+            self.assertIsInstance(details["description"], str)
+            self.assertIsInstance(details["schedule"], str)
+            self.assertIsInstance(details["max_participants"], int)
+            self.assertIsInstance(details["participants"], list)
+            self.assertTrue(all(isinstance(email, str) for email in details["participants"]))
+
+    def test_signup_is_visible_in_catalog_and_does_not_change_other_activities(self):
+        email = "newstudent@mergington.edu"
+        self.assertEqual(self.signup(email).status_code, 200)
+        expected = deepcopy(self.original_activities)
+        expected["Chess Club"]["participants"].append(email)
+        response = self.client.get("/activities")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), expected)
+
+    def test_root_redirect_and_frontend_assets(self):
+        response = self.client.get("/", follow_redirects=False)
+        self.assertEqual(response.status_code, 307)
+        self.assertEqual(response.headers["location"], "/static/index.html")
+        for path, content_type, expected in [
+            ("/static/index.html", "text/html", 'id="signup-form"'),
+            ("/static/app.js", "javascript", "DOMContentLoaded"),
+            ("/static/styles.css", "text/css", ".activity-card"),
+        ]:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(content_type, response.headers["content-type"])
+                self.assertIn(expected, response.text)
+
+    def test_missing_email_does_not_change_participants(self):
+        response = self.client.post("/activities/Chess%20Club/signup")
+        self.assertEqual(response.status_code, 422)
+        self.assertTrue(any(
+            error["loc"] == ["query", "email"] and error["type"] == "missing"
+            for error in response.json()["detail"]
+        ))
+        self.assertEqual(activities, self.original_activities)
 
     def test_accepts_school_email_and_normalizes_domain(self):
         for email, expected in [
@@ -128,6 +177,29 @@ class SignupTests(unittest.TestCase):
         self.assertEqual(
             response.json()["detail"], "Student already signed up for this activity"
         )
+
+    def test_concurrent_duplicate_signups_register_only_once(self):
+        barrier = Barrier(8)
+        email = "samestudent@mergington.edu"
+
+        def signup_together(_):
+            barrier.wait(timeout=10)
+            return self.signup(email)
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            responses = list(executor.map(signup_together, range(8)))
+
+        self.assertEqual(sum(response.status_code == 200 for response in responses), 1)
+        self.assertEqual(sum(response.status_code == 400 for response in responses), 7)
+        for response in responses:
+            if response.status_code == 400:
+                self.assertEqual(
+                    response.json(),
+                    {"detail": "Student already signed up for this activity"},
+                )
+        expected = deepcopy(self.original_activities)
+        expected["Chess Club"]["participants"].append(email)
+        self.assertEqual(activities, expected)
 
     def test_form_accepts_only_username_with_fixed_school_domain(self):
         class EmailInputParser(HTMLParser):

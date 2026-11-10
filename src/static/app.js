@@ -155,6 +155,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       activitiesLoaded = false;
       activityCards.clear();
+      fullActivities.clear();
+      selectedActivity = "";
+      updateSignupButton();
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       activityCount.textContent = "Activities unavailable";
       activitiesEmpty.hidden = true;
