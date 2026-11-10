@@ -12,8 +12,10 @@ A super simple FastAPI application that allows students to view and sign up for 
   remaining spots, "Almost full" when at most 20% of capacity remains, or "Full".
 - Signup shows "Signing up..." and blocks repeat submissions while a request is pending.
 - Signup confirmations and errors stay visible until dismissed or a new signup attempt begins.
-- Each available activity has a Join button that selects it and focuses the username field.
-- Full activities have disabled Join buttons and dropdown options. The API also
+- Choose an activity with its Join button, which focuses the username field.
+  The signup form displays the selected activity without a redundant dropdown
+  and requires a selection before signup. Successful signup clears the selection.
+- Full activities have disabled Join buttons and cannot be submitted. The API also
   rejects signups once capacity is reached, including simultaneous requests for
   the last spot within the running application process.
 

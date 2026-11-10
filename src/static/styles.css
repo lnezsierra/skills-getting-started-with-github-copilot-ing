@@ -149,13 +149,20 @@ section h3 {
   font-weight: bold;
 }
 
-.form-group input,
-.form-group select {
+.form-group input {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
+}
+
+.selected-activity {
+  margin-bottom: 15px;
+  padding: 10px;
+  border-left: 3px solid #1a237e;
+  background-color: #f0f2fa;
+  font-weight: bold;
 }
 
 .email-input {

@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const activitiesList = document.getElementById("activities-list");
-  const activitySelect = document.getElementById("activity");
+  const selectedActivityText = document.getElementById("selected-activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
   const messageText = document.getElementById("message-text");
@@ -8,15 +8,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const dismissMessageButton = document.getElementById("dismiss-message");
   const usernameInput = document.getElementById("username");
   const fullActivities = new Set();
+  let selectedActivity = "";
   let isSubmitting = false;
 
   function updateSignupButton() {
-    const isFull = fullActivities.has(activitySelect.value);
-    signupButton.disabled = isSubmitting || isFull;
+    const isFull = fullActivities.has(selectedActivity);
+    signupButton.disabled = isSubmitting || isFull || !selectedActivity;
     signupButton.textContent = isSubmitting ? "Signing up..." : isFull ? "Activity full" : "Sign Up";
+    selectedActivityText.textContent = selectedActivity
+      ? `Selected activity: ${selectedActivity}${isFull ? " (Full)" : ""}`
+      : "Choose an activity using its Join button.";
   }
-
-  activitySelect.addEventListener("change", updateSignupButton);
 
   function showMessage(text, type) {
     messageText.textContent = text;
@@ -40,11 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(`Failed to load activities: ${response.status}`);
       }
       const activities = await response.json();
-      const selectedActivity = activitySelect.value;
 
       // Clear loading message
       activitiesList.innerHTML = "";
-      activitySelect.options.length = 1;
       fullActivities.clear();
 
       // Populate activities list
@@ -101,21 +101,17 @@ document.addEventListener("DOMContentLoaded", () => {
         joinButton.textContent = spotsLeft === 0 ? "Full" : "Join";
         joinButton.setAttribute("aria-label", spotsLeft === 0 ? `${name} is full` : `Join ${name}`);
         joinButton.addEventListener("click", () => {
-          activitySelect.value = name;
+          selectedActivity = name;
           updateSignupButton();
           usernameInput.focus();
         });
         activityCard.appendChild(joinButton);
         activitiesList.appendChild(activityCard);
 
-        // Add option to select dropdown
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = spotsLeft === 0 ? `${name} (Full)` : name;
-        option.disabled = spotsLeft === 0;
-        activitySelect.appendChild(option);
       });
-      activitySelect.value = Object.keys(activities).includes(selectedActivity) ? selectedActivity : "";
+      if (!Object.keys(activities).includes(selectedActivity)) {
+        selectedActivity = "";
+      }
       updateSignupButton();
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
@@ -129,14 +125,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isSubmitting) {
       return;
     }
-    if (fullActivities.has(activitySelect.value)) {
+    if (!selectedActivity) {
+      showMessage("Choose an activity using its Join button.", "error");
+      return;
+    }
+    if (fullActivities.has(selectedActivity)) {
       showMessage("Activity is full. Please choose another activity.", "error");
       updateSignupButton();
       return;
     }
 
     const email = `${usernameInput.value}@mergington.edu`;
-    const activity = activitySelect.value;
+    const activity = selectedActivity;
 
     isSubmitting = true;
     updateSignupButton();
@@ -156,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         showMessage(result.message, "success");
         signupForm.reset();
+        selectedActivity = "";
         await fetchActivities();
       } else {
         const errorMessage = Array.isArray(result.detail)
@@ -177,5 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Initialize app
+  updateSignupButton();
   fetchActivities();
 });
