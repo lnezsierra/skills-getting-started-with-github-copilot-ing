@@ -3,6 +3,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const messageText = document.getElementById("message-text");
+  const signupButton = document.getElementById("signup-button");
+  const dismissMessageButton = document.getElementById("dismiss-message");
+
+  function showMessage(text, type) {
+    messageText.textContent = text;
+    messageDiv.className = `message ${type}`;
+  }
+
+  dismissMessageButton.addEventListener("click", () => {
+    messageDiv.classList.add("hidden");
+    signupButton.focus();
+  });
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -22,13 +35,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft = details.max_participants - details.participants.length;
+        const spotsLeft = Math.max(0, details.max_participants - details.participants.length);
+        const availability = spotsLeft === 0
+          ? "full"
+          : spotsLeft / details.max_participants <= 0.2 ? "limited" : "available";
+        const spotsLabel = `${spotsLeft} ${spotsLeft === 1 ? "spot" : "spots"} left`;
+        const availabilityLabel = availability === "full"
+          ? "Full"
+          : availability === "limited" ? `Almost full - ${spotsLabel}` : spotsLabel;
 
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="activity-card-header">
+            <h4>${name}</h4>
+            <span class="availability-badge availability-${availability}">${availabilityLabel}</span>
+          </div>
+          <p class="activity-description">${details.description}</p>
+          <p class="activity-schedule"><strong>Schedule:</strong> ${details.schedule}</p>
         `;
 
         const participantsSection = document.createElement("div");
@@ -69,9 +91,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (signupButton.disabled) {
+      return;
+    }
 
     const email = `${document.getElementById("username").value}@mergington.edu`;
     const activity = document.getElementById("activity").value;
+
+    signupButton.disabled = true;
+    signupButton.textContent = "Signing up...";
+    signupForm.setAttribute("aria-busy", "true");
+    messageDiv.classList.add("hidden");
 
     try {
       const response = await fetch(
@@ -84,26 +114,22 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
 
       if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
+        showMessage(result.message, "success");
         signupForm.reset();
         await fetchActivities();
       } else {
-        messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+        const errorMessage = Array.isArray(result.detail)
+          ? result.detail.map((error) => error.msg).join(" ")
+          : result.detail || "An error occurred";
+        showMessage(errorMessage, "error");
       }
-
-      messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.classList.add("hidden");
-      }, 5000);
     } catch (error) {
-      messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
-      messageDiv.classList.remove("hidden");
+      showMessage("Failed to sign up. Please try again.", "error");
       console.error("Error signing up:", error);
+    } finally {
+      signupButton.disabled = false;
+      signupButton.textContent = "Sign Up";
+      signupForm.removeAttribute("aria-busy");
     }
   });
 

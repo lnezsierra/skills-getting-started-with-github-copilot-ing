@@ -8,6 +8,10 @@ A super simple FastAPI application that allows students to view and sign up for 
 - Sign up for activities
 - Enter just your school username in the form; the fixed `@mergington.edu` suffix is added automatically.
 - Registration requires a valid `@mergington.edu` email address, enforced by the form and API (domain matching is case-insensitive).
+- Activity cards highlight schedules and show text-based availability badges:
+  remaining spots, "Almost full" when at most 20% of capacity remains, or "Full".
+- Signup shows "Signing up..." and blocks repeat submissions while a request is pending.
+- Signup confirmations and errors stay visible until dismissed or a new signup attempt begins.
 
 ## Getting Started
 
@@ -45,6 +49,12 @@ From the repository root, run:
 
 ```
 python -m unittest discover -s tests -v
+```
+
+With Node.js installed, run the UI behavior tests from the repository root:
+
+```
+node tests/test_ui.js
 ```
 
 ## Data Model

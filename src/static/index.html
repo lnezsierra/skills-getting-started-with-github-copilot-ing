@@ -50,9 +50,12 @@
               <!-- Activity options will be loaded here -->
             </select>
           </div>
-          <button type="submit">Sign Up</button>
+          <button type="submit" id="signup-button">Sign Up</button>
         </form>
-        <div id="message" class="hidden"></div>
+        <div id="message" class="message hidden">
+          <p id="message-text" role="status" aria-live="polite" aria-atomic="true"></p>
+          <button type="button" id="dismiss-message">Dismiss</button>
+        </div>
       </section>
     </main>
 
