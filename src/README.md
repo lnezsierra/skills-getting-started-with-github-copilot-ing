@@ -6,6 +6,7 @@ A super simple FastAPI application that allows students to view and sign up for 
 
 - View all available extracurricular activities
 - Sign up for activities
+- Enter just your school username in the form; the fixed `@mergington.edu` suffix is added automatically.
 - Registration requires a valid `@mergington.edu` email address, enforced by the form and API (domain matching is case-insensitive).
 
 ## Getting Started

@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const email = document.getElementById("email").value;
+    const email = `${document.getElementById("username").value}@mergington.edu`;
     const activity = document.getElementById("activity").value;
 
     try {

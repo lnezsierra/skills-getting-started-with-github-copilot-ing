@@ -113,6 +113,21 @@ section h3 {
   font-size: 16px;
 }
 
+.email-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.email-input input {
+  flex: 1;
+  min-width: 0;
+}
+
+.email-domain {
+  flex-shrink: 0;
+}
+
 button {
   background-color: #1a237e;
   color: white;

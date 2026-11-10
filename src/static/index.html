@@ -25,17 +25,23 @@
         <h3>Sign Up for an Activity</h3>
         <form id="signup-form">
           <div class="form-group">
-            <label for="email">Student Email:</label>
-            <input
-              type="email"
-              id="email"
-              required
-              placeholder="your-email@mergington.edu"
-              pattern="[^@\s]+@[mM][eE][rR][gG][iI][nN][gG][tT][oO][nN]\.[eE][dD][uU]"
-              title="Use your @mergington.edu school email address"
-              aria-describedby="email-help"
-            />
-            <small id="email-help">Use your @mergington.edu school email address.</small>
+            <label for="username">Student Username:</label>
+            <div class="email-input">
+              <input
+                type="text"
+                id="username"
+                required
+                placeholder="your-username"
+                pattern="[^@\s]+"
+                title="Enter only your school username, without spaces or @mergington.edu"
+                autocomplete="username"
+                autocapitalize="off"
+                spellcheck="false"
+                aria-describedby="email-domain email-help"
+              />
+              <span id="email-domain" class="email-domain">@mergington.edu</span>
+            </div>
+            <small id="email-help">Enter only the part before @. The school domain is added automatically.</small>
           </div>
           <div class="form-group">
             <label for="activity">Select Activity:</label>

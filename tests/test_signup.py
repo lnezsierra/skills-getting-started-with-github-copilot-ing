@@ -86,32 +86,50 @@ class SignupTests(unittest.TestCase):
         )
         self.assertEqual(activities, self.original_activities)
 
-    def test_form_requires_exact_school_domain(self):
+    def test_form_accepts_only_username_with_fixed_school_domain(self):
         class EmailInputParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.username_input = None
+                self.reading_domain = False
+                self.domain = ""
+
             def handle_starttag(self, tag, attrs):
                 attributes = dict(attrs)
-                if tag == "input" and attributes.get("id") == "email":
-                    self.email_input = attributes
+                if tag == "input" and attributes.get("id") == "username":
+                    self.username_input = attributes
+                if tag == "span" and attributes.get("id") == "email-domain":
+                    self.reading_domain = True
+
+            def handle_data(self, data):
+                if self.reading_domain:
+                    self.domain += data
+
+            def handle_endtag(self, tag):
+                if tag == "span":
+                    self.reading_domain = False
 
         parser = EmailInputParser()
         parser.feed(
             (Path(__file__).parents[1] / "src/static/index.html").read_text()
         )
-        attributes = parser.email_input
-        self.assertEqual(attributes["type"], "email")
+        attributes = parser.username_input
+        self.assertIsNotNone(attributes)
+        self.assertEqual(attributes["type"], "text")
         self.assertIn("required", attributes)
-        self.assertIn("@mergington.edu", attributes["title"])
-        for email in ["student@mergington.edu", "student@MERGINGTON.EDU"]:
-            self.assertIsNotNone(re.fullmatch(attributes["pattern"], email))
-        for email in [
+        self.assertIn("email-domain", attributes["aria-describedby"].split())
+        self.assertEqual(parser.domain, "@mergington.edu")
+        for username in ["student", "student.name", "student+club", "Student_1"]:
+            self.assertIsNotNone(re.fullmatch(attributes["pattern"], username))
+        for username in [
+            "",
+            "student name",
+            "student\tname",
             "student@gmail.com",
-            "student@mergington.edu.example.com",
-            "student@sub.mergington.edu",
-            "student@mergingtonxedu",
-            "student@@mergington.edu",
+            "student@mergington.edu",
             "@mergington.edu",
         ]:
-            self.assertIsNone(re.fullmatch(attributes["pattern"], email))
+            self.assertIsNone(re.fullmatch(attributes["pattern"], username))
 
 
 if __name__ == "__main__":
