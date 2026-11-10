@@ -15,6 +15,8 @@ A super simple FastAPI application that allows students to view and sign up for 
 - Registration requires a valid `@mergington.edu` email address, enforced by the form and API (domain matching is case-insensitive).
 - Activity cards highlight schedules and show text-based availability badges:
   remaining spots, "Almost full" when at most 20% of capacity remains, or "Full".
+- Participant sections show a count and start collapsed. Open the Participants
+  dropdown with a click or keyboard to see the bulleted list or empty-state message.
 - Signup shows "Signing up..." and blocks repeat submissions while a request is pending.
 - Signup confirmations and errors stay visible until dismissed or a new signup attempt begins.
 - Choose an activity with its Join button, which focuses the username field.

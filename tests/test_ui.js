@@ -143,6 +143,20 @@ async function run() {
   }
   assert(cards[0].html.includes('class="activity-schedule"'), "Highlighted schedule");
   assert(cards[0].children[0].className === "participants", "Separate participant section");
+  for (const card of cards) {
+    const participants = card.children[0];
+    assert(participants.tag === "details", "Use native expandable participant dropdown");
+    assert(!participants.open && !("open" in participants.attributes), "Participant lists start collapsed");
+    assert(participants.children[0].tag === "summary", "Dropdown has a keyboard-accessible summary");
+  }
+  const participants = cards[0].children[0];
+  assert(participants.children[0].textContent === "Participants (7)", "Show participant count before opening");
+  assert(participants.children[1].tag === "ul", "Keep participants in a bulleted list inside dropdown");
+  assert(participants.children[1].children.length === 7, "Include every participant inside dropdown");
+  assert(participants.children[1].children[0].textContent === "student0@mergington.edu", "Render participant email as text");
+  const emptyParticipants = cards[5].children[0];
+  assert(emptyParticipants.children[0].textContent === "Participants (0)", "Show zero participant count");
+  assert(emptyParticipants.children[1].textContent === "No participants yet.", "Keep empty state inside collapsed dropdown");
   const joinButton = cards[0].children[1];
   assert(joinButton.textContent === "Join" && !joinButton.disabled, "Available activity has Join button");
   assert(joinButton.attributes["aria-label"] === "Join Available", "Join button identifies activity");
@@ -180,6 +194,7 @@ async function run() {
   assert(!("aria-busy" in ids["signup-form"].attributes), "Clear busy state");
   assert(ids.username.value === "", "Reset form after success");
   assert(ids["activities-list"].children[0].html.includes("Almost full - 2 spots left"), "Refresh badge after signup");
+  assert(ids["activities-list"].children[0].children[0].children[0].textContent === "Participants (8)", "Refresh participant dropdown count after signup");
   assert(ids["selected-activity"].textContent.includes("Choose an activity"), "Clear selected activity after success");
   await settle();
   assert(!ids.message.classList.contains("hidden"), "Success stays visible");

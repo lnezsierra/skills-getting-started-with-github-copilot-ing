@@ -107,10 +107,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <p class="activity-schedule"><strong>Schedule:</strong> ${details.schedule}</p>
         `;
 
-        const participantsSection = document.createElement("div");
+        const participantsSection = document.createElement("details");
         participantsSection.className = "participants";
-        const participantsHeading = document.createElement("h4");
-        participantsHeading.textContent = "Participants";
+        const participantsHeading = document.createElement("summary");
+        participantsHeading.textContent = `Participants (${details.participants.length})`;
         participantsSection.appendChild(participantsHeading);
 
         if (details.participants.length > 0) {

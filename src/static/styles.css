@@ -297,10 +297,25 @@ main {
   font-size: 0.85rem;
 }
 
-.participants h4 {
-  margin-bottom: 6px;
+.participants summary {
+  min-height: 44px;
+  padding-block: 10px;
   color: var(--ink);
   font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.participants summary::marker {
+  color: var(--pink);
+}
+
+.participants summary:hover {
+  color: var(--teal-dark);
+}
+
+.participants[open] summary {
+  margin-bottom: 10px;
 }
 
 .participants ul {
@@ -356,7 +371,7 @@ button:disabled {
   cursor: wait;
 }
 
-:is(button, input, a):focus-visible {
+:is(button, input, a, summary):focus-visible {
   outline: 3px solid var(--pink);
   outline-offset: 3px;
 }
